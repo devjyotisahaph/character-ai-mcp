@@ -608,24 +608,29 @@ async function caiPlusApiCall(endpoint, body) {
   return await res.json();
 }
 
-server.tool("create_scene", "Create a new scene/scenario on Character AI.", {
-  title: z.string().describe("Scene title (required)"),
-  description: z.string().describe("Scene description - what happens in this scenario"),
-  greeting: z.string().describe("Opening message when the scene starts"),
+server.tool("create_scene", "Create a new scene/scenario on Character AI. Scenes have a setting, player goal, intro, greeting, name, and tags.", {
+  name: z.string().describe("Scene name/title (max 40 chars, required)"),
   character_id: z.string().describe("Character ID to use in the scene"),
+  scene_setting: z.string().describe("Scene setting - high-level description of the environment and context (max 650 chars)"),
+  player_goal: z.string().describe("Player goal - what the user should try to accomplish (max 120 chars)"),
+  intro: z.string().describe("Introduce this scene - opening text the audience sees before entering (max 650 chars)"),
+  greeting: z.string().describe("Character greeting - first message the character sends when scene starts (max 1200 chars)"),
+  tags: z.array(z.string()).optional().describe("Tags for the scene (e.g. ['Fantasy', 'Romance', 'Mystery'])"),
   visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional().describe("Scene visibility (default: PRIVATE)"),
-}, async ({ title, description, greeting, character_id, visibility }) => {
+}, async ({ name, character_id, scene_setting, player_goal, intro, greeting, tags, visibility }) => {
   try {
     await ensureLoggedIn();
     const body = {
-      title,
-      description: description || "",
+      name,
+      description: scene_setting || "",
+      goal: player_goal || "",
+      intro: intro || "",
       greeting: greeting || "",
       character_id,
       visibility: visibility || "PRIVATE",
-      type: "SCENE",
+      tags: tags || [],
     };
-    const result = await caiPlusApiCall("/chat/character/scene/create/", body);
+    const result = await caiApiCall("/chat/scene/create/", body);
     return ok(`Scene created!\n\n${json(result)}`);
   } catch (e) { return err(`Error creating scene: ${e.message}`); }
 });
