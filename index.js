@@ -158,7 +158,7 @@ server.tool("create_character", "Create a new AI character on Character AI.", {
   name: z.string().describe("Character name (required)"),
   greeting: z.string().describe("First message the character sends when chat starts"),
   title: z.string().optional().describe("Short tagline for the character card"),
-  description: z.string().optional().describe("Detailed personality, backstory, traits (max 500 chars)"),
+  description: z.string().optional().describe("Leave empty unless specified. Detailed personality, backstory, traits (max 500 chars)"),
   definition: z.string().optional().describe("Advanced behavior definition with example dialogues. Use {{char}} and {{user}} variables"),
   visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional().describe("Character visibility (default: PRIVATE)"),
 }, async ({ name, greeting, title, description, definition, visibility }) => {
@@ -706,14 +706,14 @@ server.tool("get_voice_info", "Get detailed info about a specific voice by ID.",
 
 server.tool("set_character_style", "Set the AI response style/model for a character chat. In the CAI app, this is under 'Style' or 'New chat' menu. Each style changes how the AI responds.", {
   character_id: z.string().describe("Character ID to set style for"),
-  style: z.string().describe("Style name. Available styles from CAI: 'pipsqueak' (concise/short), 'deepsqueak' (roleplay), 'roar' (speed/smarts), 'nyan' (thoughtful), 'softlaunch', 'dynamic' (experimental), 'goro' (experimental), 'default'"),
+  style: z.string().optional().describe("Style name. Available: 'roar' (speed/smarts, DEFAULT), 'pipsqueak' (concise/short), 'deepsqueak' (roleplay), 'nyan' (thoughtful), 'softlaunch', 'dynamic' (experimental), 'goro' (experimental), 'default'"),
   start_new_chat: z.boolean().optional().describe("If true, starts a new chat with the selected style. If false, continues current chat with new style (default: false)"),
 }, async ({ character_id, style, start_new_chat }) => {
   try {
     await ensureLoggedIn();
     const body = {
       external_id: character_id,
-      style_name: style.toLowerCase(),
+      style_name: (style || "roar").toLowerCase(),
       new_chat: start_new_chat || false,
     };
     const result = await caiApiCall("/chat/character/style/update/", body);
