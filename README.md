@@ -1,6 +1,6 @@
 # Character AI MCP Server v2.0
 
-An MCP server that wraps the full **Character AI** API using [CAINode](https://github.com/KevinAdhaikal/CAINode). **38 tools** for searching, chatting, managing characters, group chats, image generation, personas, and more.
+An MCP server that wraps the full **Character AI** API using [CAINode](https://github.com/KevinAdhaikal/CAINode). **53 tools** for searching, chatting, managing characters, scenes, voices, group chats, image generation, personas, styles, and more.
 
 ## Setup
 
@@ -11,25 +11,52 @@ cd character-ai-mcp
 npm install
 ```
 
-### Get Your Auth Token
+### Get Your Auth Token (Easy Method)
 
-1. Open **character.ai** in Chrome (logged in)
-2. Press **F12** → **Network** tab → Refresh page
-3. Filter by **`neo`** → click any request
-4. Find `authorization: Token xxxxxxxx` in Request Headers
-5. Copy the hex string after "Token "
+1. Open **character.ai** in Chrome (log in if needed)
+2. Press **F12** → click the **Console** tab
+3. Paste this and press Enter:
+   ```js
+   JSON.parse(localStorage.getItem("char_token")).value
+   ```
+4. Copy the token string that appears
 
-> Tokens expire periodically. Repeat these steps if you get auth errors.
+**Then save it (pick one):**
+
+**Option A** - Run the helper script (recommended):
+```bash
+node get-token.js
+```
+It will guide you and save the token to `.cai-token` automatically.
+
+**Option B** - Save manually:
+Create a file called `.cai-token` in the project folder and paste your token in it.
+
+**Option C** - Use an environment variable:
+Set `CAI_TOKEN` in your MCP config (see below).
+
+> Tokens expire periodically. If you get auth errors, repeat the steps above.
 
 ### MCP Config
 
 Add to your MCP config (e.g. `mcp_config.json`):
+
+**If using .cai-token file (no env variable needed):**
+```json
+"character-ai": {
+  "command": "node",
+  "args": ["/path/to/character-ai-mcp/index.js"],
+  "type": "stdio"
+}
+```
+
+**If using env variable:**
 ```json
 "character-ai": {
   "command": "node",
   "args": ["/path/to/character-ai-mcp/index.js"],
   "type": "stdio",
-  "env": { "CAI_TOKEN": "your_token" }
+  "env": { "CAI_TOKEN": "your_token_here" }
 }
 ```
 

@@ -1,13 +1,26 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import { existsSync, readFileSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
 
 const { CAINode } = await import("cainode");
 
-const CAI_TOKEN = process.env.CAI_TOKEN;
+// Token loading: env variable > .cai-token file
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const TOKEN_FILE = join(__dirname, '.cai-token');
+
+let CAI_TOKEN = process.env.CAI_TOKEN;
+if (!CAI_TOKEN && existsSync(TOKEN_FILE)) {
+  CAI_TOKEN = readFileSync(TOKEN_FILE, 'utf-8').trim();
+}
 if (!CAI_TOKEN) {
-  console.error("ERROR: CAI_TOKEN environment variable is required.");
-  console.error("Get your token from character.ai > DevTools > Network tab > Authorization header");
+  console.error("ERROR: No Character AI token found.");
+  console.error("");
+  console.error("Easy setup: run 'node get-token.js' to save your token.");
+  console.error("");
+  console.error("Or set CAI_TOKEN environment variable in your MCP config.");
   process.exit(1);
 }
 
