@@ -575,6 +575,115 @@ server.tool("featured_voices", "Get featured/popular voices.", {}, async () => {
   } catch (e) { return err(`Error: ${e.message}`); }
 });
 
+// ===================== SCENE CREATION (Direct API) =====================
+
+async function caiApiGet(endpoint) {
+  const res = await fetch(`https://neo.character.ai${endpoint}`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Token ${CAI_TOKEN}`,
+    },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  return await res.json();
+}
+
+async function caiPlusApiCall(endpoint, body) {
+  const res = await fetch(`https://plus.character.ai${endpoint}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Token ${CAI_TOKEN}`,
+    },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`API ${res.status}: ${text}`);
+  }
+  return await res.json();
+}
+
+server.tool("create_scene", "Create a new scene/scenario on Character AI.", {
+  title: z.string().describe("Scene title (required)"),
+  description: z.string().describe("Scene description - what happens in this scenario"),
+  greeting: z.string().describe("Opening message when the scene starts"),
+  character_id: z.string().describe("Character ID to use in the scene"),
+  visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional().describe("Scene visibility (default: PRIVATE)"),
+}, async ({ title, description, greeting, character_id, visibility }) => {
+  try {
+    await ensureLoggedIn();
+    const body = {
+      title,
+      description: description || "",
+      greeting: greeting || "",
+      character_id,
+      visibility: visibility || "PRIVATE",
+      type: "SCENE",
+    };
+    const result = await caiPlusApiCall("/chat/character/scene/create/", body);
+    return ok(`Scene created!\n\n${json(result)}`);
+  } catch (e) { return err(`Error creating scene: ${e.message}`); }
+});
+
+server.tool("create_voice", "Create a new voice on Character AI using a text prompt.", {
+  name: z.string().describe("Voice name"),
+  description: z.string().optional().describe("Voice description"),
+  voice_prompt: z.string().describe("Text prompt describing the voice characteristics (e.g. 'deep male voice, warm and calm')"),
+  visibility: z.enum(["public", "private"]).optional().describe("Voice visibility (default: private)"),
+}, async ({ name, description, voice_prompt, visibility }) => {
+  try {
+    await ensureLoggedIn();
+    const body = {
+      name,
+      description: description || "",
+      voice_prompt: voice_prompt || "",
+      visibility: visibility || "private",
+    };
+    const result = await caiApiCall("/multimodal/api/v1/voices/", body);
+    return ok(`Voice created!\n\n${json(result)}`);
+  } catch (e) { return err(`Error creating voice: ${e.message}`); }
+});
+
+server.tool("set_character_voice", "Set which voice a character uses.", {
+  character_id: z.string().describe("Character ID to set voice for"),
+  voice_id: z.string().describe("Voice ID to assign to the character"),
+}, async ({ character_id, voice_id }) => {
+  try {
+    await ensureLoggedIn();
+    const body = {
+      character_external_id: character_id,
+      voice_id: voice_id,
+    };
+    const result = await caiPlusApiCall("/chat/character/voice_override/update/", body);
+    return ok(`Voice set!\n\n${json(result)}`);
+  } catch (e) { return err(`Error setting voice: ${e.message}`); }
+});
+
+server.tool("get_scene", "Get details about a specific scene.", {
+  scene_id: z.string().describe("Scene ID to get details for"),
+}, async ({ scene_id }) => {
+  try {
+    await ensureLoggedIn();
+    const result = await caiApiGet(`/chat/character/scene/${scene_id}/`);
+    return ok(`Scene details:\n\n${json(result)}`);
+  } catch (e) { return err(`Error: ${e.message}`); }
+});
+
+server.tool("get_voice_info", "Get detailed info about a specific voice by ID.", {
+  voice_id: z.string().describe("Voice ID to get info for"),
+}, async ({ voice_id }) => {
+  try {
+    await ensureLoggedIn();
+    const result = await caiApiGet(`/multimodal/api/v1/voices/${voice_id}/`);
+    return ok(`Voice info:\n\n${json(result)}`);
+  } catch (e) { return err(`Error: ${e.message}`); }
+});
+
 // ===================== START SERVER =====================
 
 const transport = new StdioServerTransport();
