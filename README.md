@@ -1,6 +1,6 @@
-# Character AI MCP Server v2.0
+# Character AI MCP Server
 
-An MCP server that wraps the full **Character AI** API using [CAINode](https://github.com/KevinAdhaikal/CAINode). **53 tools** for searching, chatting, managing characters, scenes, voices, group chats, image generation, personas, styles, and more.
+An MCP server for **Character AI** with **53 tools** for searching, chatting, managing characters, scenes, voices, group chats, image generation, personas, styles, and more.
 
 ## Setup
 
@@ -11,7 +11,9 @@ cd character-ai-mcp
 npm install
 ```
 
-### Get Your Auth Token (Easy Method)
+### Get Your Auth Token
+
+**Easiest method** — one console command:
 
 1. Open **character.ai** in Chrome (log in if needed)
 2. Press **F12** → click the **Console** tab
@@ -23,19 +25,29 @@ npm install
 
 **Then save it (pick one):**
 
-**Option A** - Run the helper script (recommended):
+**Option A** — Run the helper script (recommended):
 ```bash
 node get-token.js
 ```
-It will guide you and save the token to `.cai-token` automatically.
 
-**Option B** - Save manually:
-Create a file called `.cai-token` in the project folder and paste your token in it.
+**Option B** — Create a `.cai-token` file in the project folder and paste your token in it.
 
-**Option C** - Use an environment variable:
-Set `CAI_TOKEN` in your MCP config (see below).
+**Option C** — Set `CAI_TOKEN` environment variable in your MCP config.
 
 > Tokens expire periodically. If you get auth errors, repeat the steps above.
+
+### For AI Agents (Auto Token Grab)
+
+If the agent has browser access (e.g. Antigravity, Copilot with browser tools), it can grab the token automatically:
+
+1. Open `https://character.ai` in the browser (user must be logged in)
+2. Run this JavaScript in the browser console:
+   ```js
+   JSON.parse(localStorage.getItem("char_token")).value
+   ```
+3. Save the result to the `.cai-token` file in the MCP server directory
+
+This means **zero manual setup** — the agent handles everything.
 
 ### MCP Config
 
