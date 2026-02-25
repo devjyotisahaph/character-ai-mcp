@@ -689,6 +689,47 @@ server.tool("get_voice_info", "Get detailed info about a specific voice by ID.",
   } catch (e) { return err(`Error: ${e.message}`); }
 });
 
+// ===================== STYLE & EXTRAS =====================
+
+server.tool("set_character_style", "Set the response style for a character (e.g. PipSqueak for short responses, Default, Verbose).", {
+  character_id: z.string().describe("Character ID to set style for"),
+  style: z.string().describe("Style name to set. Known styles: 'default', 'pipsqueak' (short/concise), 'verbose' (detailed/long), 'creative' (imaginative), 'balanced'"),
+}, async ({ character_id, style }) => {
+  try {
+    await ensureLoggedIn();
+    const body = {
+      external_id: character_id,
+      style_name: style.toLowerCase(),
+    };
+    const result = await caiApiCall("/chat/character/style/update/", body);
+    return ok(`Style set to "${style}"!\n\n${json(result)}`);
+  } catch (e) { return err(`Error setting style: ${e.message}`); }
+});
+
+server.tool("like_character", "Like/upvote a character (or unlike).", {
+  character_id: z.string().describe("Character ID to like"),
+  like: z.boolean().optional().describe("True to like, false to unlike (default: true)"),
+}, async ({ character_id, like }) => {
+  try {
+    await ensureLoggedIn();
+    const shouldLike = like !== false;
+    const body = {
+      external_id: character_id,
+      label: shouldLike ? "like" : "none",
+    };
+    const result = await caiApiCall("/chat/character/vote/", body);
+    return ok(`Character ${shouldLike ? "liked" : "unliked"}!\n\n${json(result)}`);
+  } catch (e) { return err(`Error: ${e.message}`); }
+});
+
+server.tool("get_character_link", "Get a shareable link for a character.", {
+  character_id: z.string().describe("Character ID to get link for"),
+}, async ({ character_id }) => {
+  try {
+    return ok(`Shareable link:\n\nhttps://character.ai/chat/${character_id}`);
+  } catch (e) { return err(`Error: ${e.message}`); }
+});
+
 // ===================== START SERVER =====================
 
 const transport = new StdioServerTransport();
