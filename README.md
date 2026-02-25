@@ -6,7 +6,8 @@ An MCP server that wraps the full **Character AI** API using [CAINode](https://g
 
 ### Install
 ```bash
-cd C:\Users\amiak\Desktop\tx\character-ai-mcp
+git clone https://github.com/devjyotisahaph/character-ai-mcp.git
+cd character-ai-mcp
 npm install
 ```
 
@@ -22,11 +23,11 @@ npm install
 
 ### MCP Config
 
-Already configured in `mcp_config.json`:
+Add to your MCP config (e.g. `mcp_config.json`):
 ```json
 "character-ai": {
   "command": "node",
-  "args": ["C:\\Users\\amiak\\Desktop\\tx\\character-ai-mcp\\index.js"],
+  "args": ["/path/to/character-ai-mcp/index.js"],
   "type": "stdio",
   "env": { "CAI_TOKEN": "your_token" }
 }
@@ -175,7 +176,7 @@ send_message({ character_id: "JBCxeSf0wJTEhlGbOBJMxyTdFfTK41md4GI9weJantg",
 mcp_beeper_send_message({ chatID: "...", text: "<CAI response>" })
 ```
 
-Full workflow: [reply-to-unreads.md](file:///C:/Users/amiak/Desktop/tx/.agents/workflows/reply-to-unreads.md)
+Full workflow: [reply-to-unreads.md](./reply-to-unreads.md)
 
 ---
 
