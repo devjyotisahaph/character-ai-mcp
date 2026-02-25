@@ -13,15 +13,25 @@ npm install
 
 ### Get Your Auth Token
 
-**Easiest method** — one console command:
+**Easiest method** — intercept from network requests:
 
 1. Open **character.ai** in Chrome (log in if needed)
-2. Press **F12** → click the **Console** tab
-3. Paste this and press Enter:
+2. Press **F12** → click the **Network** tab
+3. Reload the page
+4. Filter requests for `character.ai` (e.g. `neo.character.ai` or `plus.character.ai`)
+5. Click any request → **Headers** tab → look for `Authorization: Token <token>`
+6. Copy the token value (the part after "Token ")
+
+**Alternative** — try the console method (may not work in all browsers):
+
+1. Press **F12** → click the **Console** tab
+2. Paste this and press Enter:
    ```js
    JSON.parse(localStorage.getItem("char_token")).value
    ```
-4. Copy the token string that appears
+3. If it returns a string, that's your token. If it returns `null`, use the network method above.
+
+> **Note:** The `localStorage` method (`char_token` key) does not work in all browser environments. The network header method is more reliable.
 
 **Then save it (pick one):**
 
@@ -42,12 +52,12 @@ If the agent has browser access, it can grab the token automatically with **zero
 
 1. Open `https://character.ai` in the browser (user must be logged in)
 2. Wait for the page to load
-3. List network requests and find any request to `neo.character.ai`
+3. Intercept network requests to any `character.ai` domain (e.g. `neo.character.ai`, `plus.character.ai`)
 4. Read the request headers — look for `Authorization: Token <token>`
 5. Extract the token value (the part after "Token ")
 6. Save it to the `.cai-token` file in the MCP server directory
 
-> **Note:** The `localStorage` method (`char_token` key) does not work in all browser environments. The network header sniffing method is more reliable.
+> **Note:** The `localStorage` method (`char_token` key) does **not** work in many browser environments (Playwright, automated browsers, some Chrome profiles). The network header sniffing method is the most reliable approach.
 
 ### MCP Config
 
@@ -74,7 +84,7 @@ Add to your MCP config (e.g. `mcp_config.json`):
 
 ---
 
-## All 38 Tools
+## All 53 Tools
 
 ### Search & Discover
 
@@ -95,6 +105,8 @@ Add to your MCP config (e.g. `mcp_config.json`):
 | `character_info` | Get character info | `character_id` |
 | `character_info_detailed` | Get full details + definition (if public) | `character_id` |
 | `character_voice` | Get character voice info | `character_id` |
+| `create_character` | Create a new AI character | `name`, `greeting`, `title?`, `description?`, `definition?`, `visibility?` |
+| `update_character` | Update an existing character | `character_id`, `name?`, `greeting?`, `title?`, `description?`, `definition?`, `visibility?` |
 
 ### Single Chat
 
@@ -162,6 +174,25 @@ Add to your MCP config (e.g. `mcp_config.json`):
 |------|-------------|------------|
 | `list_voices` | List your created voices | - |
 | `featured_voices` | Get featured voices | - |
+| `create_voice` | Create a new voice from text prompt | `name`, `voice_prompt`, `description?`, `visibility?` |
+| `get_voice_info` | Get detailed info about a voice | `voice_id` |
+| `set_character_voice` | Set which voice a character uses | `character_id`, `voice_id` |
+
+### Scenes
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `create_scene` | Create a new scene/scenario | `name`, `character_id`, `scene_setting`, `player_goal`, `intro`, `greeting`, `tags?`, `visibility?` |
+| `get_scene` | Get details about a scene | `scene_id` |
+
+### Style & Extras
+
+| Tool | Description | Parameters |
+|------|-------------|------------|
+| `set_character_style` | Set AI response style/model for a chat | `character_id`, `style`, `start_new_chat?` |
+| `customize_chat` | Customize chat appearance (color) | `character_id`, `chat_color?` |
+| `like_character` | Like/unlike a character | `character_id`, `like?` |
+| `get_character_link` | Get a shareable link for a character | `character_id` |
 
 ---
 
