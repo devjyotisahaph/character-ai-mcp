@@ -38,16 +38,16 @@ node get-token.js
 
 ### For AI Agents (Auto Token Grab)
 
-If the agent has browser access (e.g. Antigravity, Copilot with browser tools), it can grab the token automatically:
+If the agent has browser access, it can grab the token automatically with **zero user effort**:
 
 1. Open `https://character.ai` in the browser (user must be logged in)
-2. Run this JavaScript in the browser console:
-   ```js
-   JSON.parse(localStorage.getItem("char_token")).value
-   ```
-3. Save the result to the `.cai-token` file in the MCP server directory
+2. Wait for the page to load
+3. List network requests and find any request to `neo.character.ai`
+4. Read the request headers — look for `Authorization: Token <token>`
+5. Extract the token value (the part after "Token ")
+6. Save it to the `.cai-token` file in the MCP server directory
 
-This means **zero manual setup** — the agent handles everything.
+> **Note:** The `localStorage` method (`char_token` key) does not work in all browser environments. The network header sniffing method is more reliable.
 
 ### MCP Config
 
