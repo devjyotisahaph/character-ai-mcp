@@ -158,7 +158,7 @@ server.tool("create_character", "Create a new AI character on Character AI.", {
   name: z.string().describe("Character name (required)"),
   greeting: z.string().describe("First message the character sends when chat starts"),
   title: z.string().optional().describe("Short tagline for the character card"),
-  description: z.string().optional().describe("Leave empty unless specified. Detailed personality, backstory, traits (max 500 chars)"),
+  description: z.string().optional().default("").describe("Leave empty by default. Only fill if user explicitly provides personality/backstory (max 500 chars)"),
   definition: z.string().optional().describe("Advanced behavior definition with example dialogues. Use {{char}} and {{user}} variables"),
   visibility: z.enum(["PUBLIC", "UNLISTED", "PRIVATE"]).optional().describe("Character visibility (default: PRIVATE)"),
 }, async ({ name, greeting, title, description, definition, visibility }) => {
@@ -217,12 +217,14 @@ server.tool("update_character", "Update an existing character's attributes.", {
 
 // ===================== SINGLE CHAT =====================
 
-server.tool("send_message", "Send a message to a character and get their response.", {
+server.tool("send_message", "Send a message to a character and get their response. Auto-sets 'roar' style.", {
   character_id: z.string().describe("Character ID to chat with"),
   message: z.string().describe("Message to send"),
 }, async ({ character_id, message }) => {
   try {
     const c = await ensureLoggedIn();
+    // Auto-set roar style for every chat
+    try { await caiPlusApiCall("/chat/character/style/update/", { external_id: character_id, style_name: "roar", new_chat: false }); } catch (_) { }
     await c.character.connect(character_id);
     const response = await c.character.send_message(message, false, "");
     await c.character.disconnect();
@@ -704,21 +706,73 @@ server.tool("get_voice_info", "Get detailed info about a specific voice by ID.",
 
 // ===================== STYLE & EXTRAS =====================
 
-server.tool("set_character_style", "Set the AI response style/model for a character chat. In the CAI app, this is under 'Style' or 'New chat' menu. Each style changes how the AI responds.", {
+server.tool("set_character_style", "Set the AI response style/model for a character chat. Uses the actual CAI API (PATCH preferred-model-type). Default: roar.", {
   character_id: z.string().describe("Character ID to set style for"),
-  style: z.string().optional().describe("Style name. Available: 'roar' (speed/smarts, DEFAULT), 'pipsqueak' (concise/short), 'deepsqueak' (roleplay), 'nyan' (thoughtful), 'softlaunch', 'dynamic' (experimental), 'goro' (experimental), 'default'"),
-  start_new_chat: z.boolean().optional().describe("If true, starts a new chat with the selected style. If false, continues current chat with new style (default: false)"),
-}, async ({ character_id, style, start_new_chat }) => {
+  style: z.string().optional().describe("Style name: 'roar' (speed/smarts, DEFAULT), 'pipsqueak' (concise), 'deepsqueak' (roleplay, c.ai+ only), 'nyan' (thoughtful), 'default'"),
+  use_for_all_chats: z.boolean().optional().describe("If true, sets this style as default for ALL chats (default: false)"),
+}, async ({ character_id, style, use_for_all_chats }) => {
   try {
-    await ensureLoggedIn();
-    const body = {
-      external_id: character_id,
-      style_name: (style || "roar").toLowerCase(),
-      new_chat: start_new_chat || false,
+    const c = await ensureLoggedIn();
+    const styleName = (style || "roar").toLowerCase();
+
+    // Map style names to CAI model types
+    const MODEL_MAP = {
+      "roar": "MODEL_TYPE_BALANCED",
+      "pipsqueak": "MODEL_TYPE_DEEP_SYNTH_LITE",
+      "deepsqueak": "MODEL_TYPE_DEEP_SYNTH",
+      "nyan": "MODEL_TYPE_DEEP_SYNTH_LITE",
+      "default": "MODEL_TYPE_BALANCED",
     };
-    const result = await caiApiCall("/chat/character/style/update/", body);
-    return ok(`Style set to "${style}"${start_new_chat ? " (new chat started)" : ""}!\n\n${json(result)}`);
-  } catch (e) { return err(`Error setting style: ${e.message}`); }
+    const modelType = MODEL_MAP[styleName] || "MODEL_TYPE_BALANCED";
+
+    // First get the chat_id for this character
+    const chatInfo = await c.character.connect(character_id);
+    const chatId = chatInfo?.chats?.[0]?.chat_id;
+
+    let results = [];
+
+    // Per-chat style: PATCH /chat/{chat_id}/preferred-model-type
+    if (chatId) {
+      const patchRes = await fetch(`https://neo.character.ai/chat/${chatId}/preferred-model-type`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${CAI_TOKEN}`,
+          "Origin-id": "web-next",
+        },
+        body: JSON.stringify({ preferred_model_type: modelType }),
+      });
+      const patchResult = await patchRes.text();
+      results.push(`Per-chat style set to ${styleName} (${modelType}): ${patchRes.status}`);
+    }
+
+    // Global default if requested
+    if (use_for_all_chats) {
+      const globalRes = await fetch("https://plus.character.ai/chat/user/update_settings/", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Token ${CAI_TOKEN}`,
+        },
+        body: JSON.stringify({
+          modelPreferenceSettings: { defaultModelType: modelType },
+          personaSettings: null,
+          proactiveDmSettings: null,
+          discordSettings: null,
+          outputStyleSettings: null,
+          voiceOverrides: {},
+        }),
+      });
+      const globalResult = await globalRes.text();
+      results.push(`Global default set to ${styleName}: ${globalRes.status}`);
+    }
+
+    await c.character.disconnect();
+    return ok(`Style "${styleName}" applied!\n\n${results.join("\n")}`);
+  } catch (e) {
+    try { await client?.character?.disconnect(); } catch (_) { }
+    return err(`Error setting style: ${e.message}`);
+  }
 });
 
 server.tool("customize_chat", "Customize the chat appearance (wallpaper and chat bubble color). This is the 'Customize' menu in CAI (c.ai+ feature).", {
