@@ -691,19 +691,36 @@ server.tool("get_voice_info", "Get detailed info about a specific voice by ID.",
 
 // ===================== STYLE & EXTRAS =====================
 
-server.tool("set_character_style", "Set the response style for a character (e.g. PipSqueak for short responses, Default, Verbose).", {
+server.tool("set_character_style", "Set the AI response style/model for a character chat. In the CAI app, this is under 'Style' or 'New chat' menu. Each style changes how the AI responds.", {
   character_id: z.string().describe("Character ID to set style for"),
-  style: z.string().describe("Style name to set. Known styles: 'default', 'pipsqueak' (short/concise), 'verbose' (detailed/long), 'creative' (imaginative), 'balanced'"),
-}, async ({ character_id, style }) => {
+  style: z.string().describe("Style name. Available styles from CAI: 'pipsqueak' (concise/short), 'deepsqueak' (roleplay), 'roar' (speed/smarts), 'nyan' (thoughtful), 'softlaunch', 'dynamic' (experimental), 'goro' (experimental), 'default'"),
+  start_new_chat: z.boolean().optional().describe("If true, starts a new chat with the selected style. If false, continues current chat with new style (default: false)"),
+}, async ({ character_id, style, start_new_chat }) => {
   try {
     await ensureLoggedIn();
     const body = {
       external_id: character_id,
       style_name: style.toLowerCase(),
+      new_chat: start_new_chat || false,
     };
     const result = await caiApiCall("/chat/character/style/update/", body);
-    return ok(`Style set to "${style}"!\n\n${json(result)}`);
+    return ok(`Style set to "${style}"${start_new_chat ? " (new chat started)" : ""}!\n\n${json(result)}`);
   } catch (e) { return err(`Error setting style: ${e.message}`); }
+});
+
+server.tool("customize_chat", "Customize the chat appearance (wallpaper and chat bubble color). This is the 'Customize' menu in CAI (c.ai+ feature).", {
+  character_id: z.string().describe("Character ID to customize chat for"),
+  chat_color: z.string().optional().describe("Chat bubble color name (e.g. 'blue', 'green', 'purple', 'pink', 'orange', 'red')"),
+}, async ({ character_id, chat_color }) => {
+  try {
+    await ensureLoggedIn();
+    const body = {
+      external_id: character_id,
+      chat_color: chat_color || "",
+    };
+    const result = await caiApiCall("/chat/character/customize/", body);
+    return ok(`Chat customized!\n\n${json(result)}`);
+  } catch (e) { return err(`Error customizing chat: ${e.message}`); }
 });
 
 server.tool("like_character", "Like/upvote a character (or unlike).", {
